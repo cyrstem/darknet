@@ -1,17 +1,20 @@
-GPU=0
-CUDNN=0
-OPENCV=0
+GPU=1
+CUDNN=1
+OPENCV=1
 OPENMP=0
 DEBUG=0
 
-ARCH= -gencode arch=compute_30,code=sm_30 \
-      -gencode arch=compute_35,code=sm_35 \
-      -gencode arch=compute_50,code=[sm_50,compute_50] \
-      -gencode arch=compute_52,code=[sm_52,compute_52]
-#      -gencode arch=compute_20,code=[sm_20,sm_21] \ This one is deprecated?
+# ARCH=   -gencode=arch=compute_50,code=sm_50 \ 
+# 		-gencode=arch=compute_52,code=sm_52 \ 
+# 		-gencode=arch=compute_60,code=sm_60 \ 
+# 		-gencode=arch=compute_61,code=sm_61 \ 
+# 		-gencode=arch=compute_70,code=sm_70 \ 
+# 		-gencode=arch=compute_75,code=sm_75 \
+# 		-gencode=arch=compute_75,code=compute_75
 
-# This is what I use, uncomment if you know your arch and want to specify
-# ARCH= -gencode arch=compute_52,code=compute_52
+
+#  nvidia 1060  gtx razer blade cuda compute 
+ ARCH= -gencode=arch=compute_61,code=[sm_61] 
 
 VPATH=./src/:./examples
 SLIB=libdarknet.so
@@ -20,13 +23,15 @@ EXEC=darknet
 OBJDIR=./obj/
 
 CC=gcc
-CPP=g++
+CPP=g++ -std=c++11
+# added -std
 NVCC=nvcc 
 AR=ar
 ARFLAGS=rcs
 OPTS=-Ofast
-LDFLAGS= -lm -pthread 
-COMMON= -Iinclude/ -Isrc/
+ LDFLAGS= -L/opt/cuda/lib64 -L/usr/include/opencv4/ -lm -pthread -lstdc++ 
+#LDFLAGS+= `pkg-config --libs opencv 2> /dev/null || pkg-config --libs opencv4` -lstdc++
+COMMON= -Iinclude/ -Isrc/ -I/opt/cuda/include
 CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC
 
 ifeq ($(OPENMP), 1) 
@@ -42,14 +47,16 @@ CFLAGS+=$(OPTS)
 ifeq ($(OPENCV), 1) 
 COMMON+= -DOPENCV
 CFLAGS+= -DOPENCV
-LDFLAGS+= `pkg-config --libs opencv` -lstdc++
-COMMON+= `pkg-config --cflags opencv` 
+# LDFLAGS+= -lopencv_calib3d -lopencv_imgproc -lopencv_contrib -lopencv_legacy -lopencv_core -lopencv_ml -lopencv_features2d -lopencv_objdetect -lopencv_flann -lopencv_video -lopencv_highgui
+# COMMON+= -I/usr/include/opencv4/
+LDFLAGS+= `pkg-config --libs opencv 2> /dev/null || pkg-config --libs opencv4` -lstdc++
+COMMON+= `pkg-config --cflags opencv 2> /dev/null || pkg-config --cflags opencv4`
 endif
 
 ifeq ($(GPU), 1) 
-COMMON+= -DGPU -I/usr/local/cuda/include/
+COMMON+= -DGPU -I/opt/cuda/include/
 CFLAGS+= -DGPU
-LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
+LDFLAGS+= -L/opt/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
 endif
 
 ifeq ($(CUDNN), 1) 
